@@ -12,10 +12,11 @@ let Speed = 10;
 var Song = new Audio();
 let lvl = 1;
 let exp = 0;
-let atk = 20;
+let atk = 40;
 var ship = new Image();
 var bossimg = new Image();
-var enemyimg = new Image();
+var enemyimg1 = new Image();
+var enemyimg2 = new Image();
 var spikeimg = new Image();
 let shoot = true;
 let bs = 20;
@@ -26,10 +27,13 @@ let ss = 0.75;
 let pts = 0;
 let timescale = 1;
 let lives = 100;
+let opacity = 1;
+let livecounter = document.getElementById('lives')
 let bulletdir = [[0, -1 * bs]];
 var BGgradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
 canvas.width = document.documentElement.clientWidth;
 canvas.height = document.documentElement.clientHeight;
+let hardmode = confirm("Хардмодик?")
 if (document.documentElement.clientWidth > document.documentElement.clientHeight){
     canvas.style.height = '100%';
     canvas.style.left = (document.documentElement.clientWidth-canvas.width)/2;
@@ -45,7 +49,8 @@ BGgradient.addColorStop(0, "#010121");
 BGgradient.addColorStop(1, "#150120");
 ship.src = 'pics\\ship.png';
 bossimg.src = 'pics\\boss.png';
-enemyimg.src = 'pics\\enemy.png';
+enemyimg1.src = 'pics\\enemy1.png';
+enemyimg2.src = 'pics\\enemy2.png';
 spikeimg.src = 'pics\\down.png';
 ship.onerror = ctx.fillRect(4, 4, x - 2, y - 2);
 ship.onload = function() {
@@ -66,6 +71,7 @@ class enemy{
         this.dx = dx;
         this.dy = dy;
         this.hp = hp;
+        this.pic = Math.ceil(Math.random()*2)
     }
 }
 class spike{
@@ -172,16 +178,27 @@ function restart(){
 }
 function Iter(){
     pts++;
+    if (y > ch){
+        y = ch;
+    }
     if (pts%200 == 0){
-        timescale = Math.log10(pts)
+        timescale = Math.log10(pts)*2;
+        if (boss>0 && hardmode){
+            timescale *= 2;
+        }
         es = defes * timescale;
         ss = defss * timescale;
         if (pts%10000 == 0){
-            SpawnBoss(500*timescale);
+            SpawnBoss(12500*timescale);
         }
     }
+    if (opacity > 0) {
+        opacity -= 0.015625;
+        livecounter.innerHTML = lives;
+        livecounter.style.opacity = opacity;
+    }
     if (exp > 100 * (2 ** lvl)){
-        exp -= 100 * (2 ** lvl)
+        exp -= 100 * (2 ** lvl);
         levelup();
     }
     if (pts%parseInt(20-timescale) == 0){
@@ -190,8 +207,11 @@ function Iter(){
             SpawnSpike();
             SpawnSpike();
             SpawnSpike();
+            SpawnSpike();
+            SpawnSpike();
         }
         else{
+            SpawnEnemy(5*timescale);
             SpawnEnemy(5*timescale);
             SpawnSpike();
         }
@@ -238,6 +258,10 @@ function Iter(){
             if (bullets[i].y < 50) {
                 bullets.splice(i, 1);
                 boss -= atk;
+                if (boss <= 0){
+                    exp += 800;
+                    exp += timescale * 50;
+                }
                 continue;
             }
         }
@@ -248,6 +272,7 @@ function Iter(){
             enemies.splice(i, 1);
             i--;
             lives -= 1;
+            opacity = 1;
             if (lives <= 0){
                 restart();
                 break;
@@ -268,7 +293,12 @@ function Iter(){
         if (i >= enemies.length){
             break;
         }
-        ctx.drawImage(enemyimg, enemies[i].x - 25, enemies[i].y -25, 50, 50);
+        if (enemies[i].pic == 1){
+            ctx.drawImage(enemyimg1, enemies[i].x - 25, enemies[i].y -25, 50, 50);
+        }
+        else {
+            ctx.drawImage(enemyimg2, enemies[i].x - 25, enemies[i].y -25, 50, 50);
+        }
     }
     for (let i = 0; i < spikes.length; i++){
         spikes[i].y += spikes[i].dy;
@@ -277,7 +307,8 @@ function Iter(){
             continue;
         }
         if (y < (spikes[i].y + 15) && y > (spikes[i].y - 15) && x < (spikes[i].x + 10) && x > (spikes[i].x - 10)) {
-            lives -= 0.1;
+            lives -= 1;
+            opacity = 1;
             if (lives <= 0){
                 restart();
                 break;
